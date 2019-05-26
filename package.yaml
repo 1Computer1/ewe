@@ -1,0 +1,32 @@
+name:                ewe
+version:             0.1.0.0
+github:              "1computer1/ewe"
+license:             MIT
+author:              "1Computer1"
+maintainer:          "onecomputer00@gmail.com"
+copyright:           "2019 1Computer1"
+
+extra-source-files:
+- README.md
+
+synopsis:            Language for the lambda calculus
+category:            Language
+description:         Please see the README
+
+dependencies:
+- base
+- containers
+- megaparsec
+- mtl
+- text
+- transformers
+
+executable:
+  main: Main.hs
+  source-dirs: src
+  ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    - -Wall
+    - -O

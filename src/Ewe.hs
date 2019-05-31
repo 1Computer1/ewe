@@ -12,8 +12,8 @@ import qualified Data.Text as T
 
 import Text.Megaparsec (runParser, errorBundlePretty)
 
-import Ewe.Parser (Definition, program)
-import Ewe.Evaluator (mkEnv, evaluateNormal, pretty)
+import Ewe.Parser (Definition, Tree, program, definition, expression)
+import Ewe.Evaluator (Env, mkEnv, prelude, evaluateNormal, pretty)
 import Ewe.Error (prettyError)
 
 parseProgram :: FilePath -> T.Text -> Either String [Definition]
@@ -29,3 +29,21 @@ evaluateProgram path src xs = do
     case join (M.lookup "main" env) of
         Nothing -> Left "a symbol named main must be defined"
         Just x  -> bimap pe pretty $ runExcept (runReaderT (evaluateNormal x) env)
+
+parseDefinition :: FilePath -> T.Text -> Either String Definition
+parseDefinition path src = do
+    case runParser definition path src of
+        Left err -> Left (errorBundlePretty err)
+        Right xs -> Right xs
+
+parseExpression :: FilePath -> T.Text -> Either String Tree
+parseExpression path src = do
+    case runParser expression path src of
+        Left err -> Left (errorBundlePretty err)
+        Right xs -> Right xs
+
+evaluateExpression :: FilePath -> T.Text -> Tree -> Either String String
+evaluateExpression path src expr = evaluateExpression' path src prelude expr
+
+evaluateExpression' :: FilePath -> T.Text -> Env -> Tree -> Either String String
+evaluateExpression' path src env expr = bimap (prettyError path src) pretty $ runExcept (runReaderT (evaluateNormal expr) env)

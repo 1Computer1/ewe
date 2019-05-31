@@ -12,6 +12,8 @@ module Ewe.Parser
     , pattern Variable
     , pattern Value
     , program
+    , definition
+    , expression
     ) where
 
 import Data.Text (Text)

@@ -1,7 +1,7 @@
 # ewe
 
-An interpreter for the lambda calculus.  
-To use, `stack install ewe` then `ewe filename`.  
+An interpreter and REPL for the lambda calculus.  
+To use, run `stack install ewe` then run `ewe` for more info.  
 
 ## Syntax
 
@@ -13,16 +13,14 @@ Lambda      = "\" Identifier+ "." Expression
 Application = Value+
 Value       = Identifier | "(" Expression ")"
 Identifier  = (AlphaNum | "_")+
-
-"\" can also be "λ" or "^".
-"=" can also be ":=", "≔", "≝", or "≡".
-"." can also be "->", "→", "=>", or "⇒".
-Windows users, run `chcp 65001` in your terminal.
 ```
-
 Line comments are done with `--`, block comments with `{- -}`.  
-The `main` symbol must be defined for a program to run.  
-ewe also comes with predefined combinators `S`, `K`, `I`, `B`, `C`, `W`, `Y`.  
+Unicode syntax is also available:
+- `\` can also be `λ` or `^`.
+- `=` can also be `:=`, `≔`, `≝`, or `≡`.
+- `.` can also be `->`, `→`, `=>`, or `⇒`.
+
+Windows user will have to run `chcp 65001` for Unicode characters to display correctly.  
 
 ## Example
 

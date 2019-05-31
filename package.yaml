@@ -18,6 +18,8 @@ dependencies:
 - containers
 - megaparsec
 - mtl
+- optparse-applicative
+- repline
 - text
 - transformers
 

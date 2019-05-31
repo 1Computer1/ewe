@@ -3,6 +3,7 @@
 module Ewe.Evaluator
     ( Error
     , Env
+    , prelude
     , mkEnv
     , evaluateNormal
     , pretty

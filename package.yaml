@@ -2,9 +2,9 @@ name:                ewe
 version:             0.1.0.0
 github:              "1computer1/ewe"
 license:             MIT
-author:              "1Computer1"
+author:              "1Computer"
 maintainer:          "onecomputer00@gmail.com"
-copyright:           "2019 1Computer1"
+copyright:           "2019 1Computer"
 
 extra-source-files:
 - README.md

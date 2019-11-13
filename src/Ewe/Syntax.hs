@@ -1,32 +1,41 @@
 module Ewe.Syntax
-    ( Identifier(..)
-    , Definition(..)
-    , Tree(..)
-    , Node(..)
+    ( Ident(..)
+    , Defn(..)
+    , Expr(..)
     ) where
 
 import Data.Text (Text)
 import Ewe.Types
 
-data Identifier = Identifier
-    { idName :: Text
-    , idSpan :: Span
-    } deriving (Show)
-
-data Definition = Definition
-    { defIdent :: Identifier
-    , defBody :: Tree
-    , defSpan :: Span
-    } deriving (Show)
-
-data Tree = Tree
-    { treeNode :: Node
-    , treeSpan :: Span
-    } deriving (Show)
-
-data Node
-    = Abs Identifier Tree
-    | App Tree Tree
-    | Var Identifier
-    | Val Tree
+data Ident = Ident
+    { identSpan :: Span
+    , identText :: Text
+    }
     deriving (Show)
+
+instance HasSpan Ident where
+    getSpan = identSpan
+
+data Defn = Defn
+    { defnSpan  :: Span
+    , defnIdent :: Ident
+    , defnBody  :: Expr
+    }
+    deriving (Show)
+
+instance HasSpan Defn where
+    getSpan = defnSpan
+
+data Expr
+    = Abs Span Ident Expr
+    | App Span Expr Expr
+    | Var Span Ident
+    | Val Span Expr
+    deriving (Show)
+
+instance HasSpan Expr where
+    getSpan = \case
+        Abs s _ _ -> s
+        App s _ _ -> s
+        Var s _ -> s
+        Val s _ -> s

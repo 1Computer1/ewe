@@ -1,13 +1,11 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 module Main where
 
-import Data.Text (Text)
+import           Data.Text (Text)
 import qualified Data.Text.IO as TIO
-import Options.Applicative
-import GHC.IO.Encoding
-import Ewe
-import Repl
+import           Ewe
+import           GHC.IO.Encoding
+import           Options.Applicative
+import           Repl
 
 data EweOption
     = EvalFile FilePath

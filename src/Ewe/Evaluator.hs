@@ -1,5 +1,3 @@
-{-# LANGUAGE FlexibleContexts, LambdaCase, NamedFieldPuns, OverloadedStrings, TypeApplications #-}
-
 module Ewe.Evaluator
     ( Error
     , Env
@@ -9,22 +7,21 @@ module Ewe.Evaluator
     , pretty
     ) where
 
-import Control.Monad.Reader
-import Control.Monad.Except
+import           Control.Monad.Except
+import           Control.Monad.Reader
 
-import Data.Char
-import Data.Map (Map)
+import           Data.Char
 import qualified Data.Map as M
-import Data.Set (Set)
+import           Data.Map (Map)
 import qualified Data.Set as S
-import Data.Text (Text)
+import           Data.Set (Set)
 import qualified Data.Text as T
+import           Data.Text (Text)
 
-import Ewe.Types
-import Ewe.Parser
-import Ewe.Error
+import           Ewe.Error
+import           Ewe.Parser
 
-type Env = Map Text (Maybe Tree)
+type Env = Map Text (Maybe Expr)
 
 prelude :: Env
 prelude = M.fromList . map (fmap Just) $
@@ -38,150 +35,141 @@ prelude = M.fromList . map (fmap Just) $
     ]
     where
         infixr 2 .:
-        p .: b = Abstraction p Unknown b Unknown
+        p .: b = Abs Unknown (Ident Unknown p) b
 
         infixl 3 $:
-        f $: x = Application f x Unknown
+        f $: x = App Unknown f x
 
-        var name = Variable name Unknown Unknown
+        var name = Var Unknown (Ident Unknown name)
 
-mkEnv :: [Definition] -> Either Error Env
+mkEnv :: [Defn] -> Either Error Env
 mkEnv = fmap fst . foldM define (prelude, M.map (const Unknown) prelude)
     where
-        define (env, spans) (Definition { defIdent = Identifier { idName, idSpan }, defBody })
-            | Just conflict@(Known _ _) <- M.lookup idName spans = Left $ mkErrs
-                [ ("the symbol " <> T.unpack idName <> " has already been defined", idSpan)
-                , ("it was defined here", conflict)
+        define (env, spans) (Defn _ (Ident nameSp name) body)
+            | Just conflict@(Known _ _) <- M.lookup name spans = Left $ mkErrs
+                [ (nameSp, "the symbol " <> T.unpack name <> " has already been defined")
+                , (conflict, "it was defined here")
                 ]
-            | Just Unknown <- M.lookup idName spans = Left $ mkErr ("the symbol " <> T.unpack idName <> " has already been defined in the prelude") idSpan
-            | otherwise = Right $ (M.insert idName (Just defBody) env, M.insert idName idSpan spans)
+            | Just Unknown <- M.lookup name spans = Left $
+                mkErr nameSp $ "the symbol " <> T.unpack name <> " has already been defined in the prelude"
+            | otherwise = Right (M.insert name (Just body) env, M.insert name nameSp spans)
 
-evaluateNormal :: Tree -> ReaderT Env (Except Error) Tree
-evaluateNormal tree = do
-    tree' <- evaluate tree
-    case tree' of
-        Abstraction param paramSpan body treeSpan -> do
+evaluateNormal :: Expr -> ReaderT Env (Except Error) Expr
+evaluateNormal expr = do
+    expr' <- evaluate expr
+    case expr' of
+        Abs sp (Ident paramSp param) body -> do
             body' <- local (M.insert param Nothing) $ evaluateNormal body
-            pure $ Abstraction param paramSpan body' treeSpan
+            pure $ Abs sp (Ident paramSp param) body'
 
-        Application f x treeSpan -> do
+        App sp f x -> do
             f' <- evaluateNormal f
             x' <- evaluateNormal x
-            pure $ Application f' x' treeSpan
+            pure $ App sp f' x'
 
-        var@(Variable _ _ _) -> pure var
+        var@(Var _ _) -> pure var
 
-        Value inner _ -> evaluateNormal inner
+        Val _ inner -> evaluateNormal inner
 
-        _ -> error "impossible"
-
-evaluate :: Tree -> ReaderT Env (Except Error) Tree
+evaluate :: Expr -> ReaderT Env (Except Error) Expr
 evaluate = \case
-    app@(Application f x _) -> do
+    app@(App _ f x) -> do
         f' <- evaluate f
         case f' of
-            Abstraction param _ body _ -> betaReduce param x body >>= evaluate
+            Abs _ (Ident _ param) body -> betaReduce param x body >>= evaluate
             _ -> pure app
 
-    var@(Variable name _ treeSpan) -> do
+    var@(Var sp (Ident _ name)) -> do
         mval <- asks $ M.lookup name
         case mval of
-            Nothing -> throwError $ mkErr ("the symbol " <> T.unpack name <> " could not be found") treeSpan
+            Nothing -> throwError $ mkErr sp ("the symbol " <> T.unpack name <> " could not be found")
             Just Nothing -> pure var
             Just (Just val) -> evaluate val
 
-    Value inner _ -> evaluate inner
+    Val _ inner -> evaluate inner
 
     tree -> pure tree
 
-betaReduce :: Monad m => Text -> Tree -> Tree -> ReaderT Env m Tree
-betaReduce param arg = \case
-    lam@(Abstraction param2 param2Span body2 treeSpan) -> do
-        if param == param2
+betaReduce :: Monad m => Text -> Expr -> Expr -> ReaderT Env m Expr
+betaReduce toSub subExpr = \case
+    lam@(Abs sp (Ident paramSp param) body) -> do
+        if param == toSub
             then pure lam
             else do
-                fvs <- freeVars arg
-                if param2 `S.member` fvs
+                fvs <- freeVars subExpr
+                if param `S.member` fvs
                     then do
-                        fvs2 <- freeVars body2
-                        let param2' = newName param2 (fvs `S.union` fvs2)
-                        body2' <- rec $ alphaConvert param2 param2' body2
-                        pure $ Abstraction param2' param2Span body2' treeSpan
+                        fvs2 <- freeVars body
+                        let param' = generateName param (fvs `S.union` fvs2)
+                        body' <- go $ alphaConvert param param' body
+                        pure $ Abs sp (Ident paramSp param') body'
                     else do
-                        body2' <- rec body2
-                        pure $ Abstraction param2 param2Span body2' treeSpan
+                        body' <- go body
+                        pure $ Abs sp (Ident paramSp param) body'
 
-    Application f x treeSpan -> do
-        f' <- rec f
-        x' <- rec x
-        pure $ Application f' x' treeSpan
+    App sp f x -> do
+        f' <- go f
+        x' <- go x
+        pure $ App sp f' x'
 
-    var@(Variable name _ _)
-        | param == name -> pure arg
+    var@(Var _ (Ident _ name))
+        | name == toSub -> pure subExpr
         | otherwise -> pure var
 
-    Value inner _ -> rec inner
-
-    _ -> error "impossible"
+    Val _ inner -> go inner
     where
-        rec = betaReduce param arg
+        go = betaReduce toSub subExpr
 
-freeVars :: Monad m => Tree -> ReaderT Env m (Set Text)
+freeVars :: Monad m => Expr -> ReaderT Env m (Set Text)
 freeVars = go S.empty
     where
         go vs = \case
-            Abstraction param _ body _ -> go (S.insert param vs) body
+            Abs _ (Ident _ param) body -> go (S.insert param vs) body
 
-            Application f x _ -> S.union <$> go vs f <*> go vs x
+            App _ f x -> S.union <$> go vs f <*> go vs x
 
-            Variable name _ _ -> do
+            Var _ (Ident _ name) -> do
                 mval <- asks $ M.lookup name
                 case join mval of
                     Nothing
                         | name `S.member` vs -> pure S.empty
-                        | otherwise          -> pure $ S.singleton name
+                        | otherwise -> pure $ S.singleton name
                     Just val -> go (S.insert name vs) val
 
-            Value inner _ -> go vs inner
+            Val _ inner -> go vs inner
 
-            _ -> error "impossible"
+alphaConvert :: Text -> Text -> Expr -> Expr
+alphaConvert oldName newName = \case
+    lam@(Abs sp (Ident paramSp param) body)
+        | param == oldName -> lam
+        | otherwise -> Abs sp (Ident paramSp param) (go body)
 
-alphaConvert :: Text -> Text -> Tree -> Tree
-alphaConvert name1 name2 tree = case tree of
-    Abstraction param paramSpan body treeSpan
-        | param == name1 -> tree
-        | otherwise      -> Abstraction param paramSpan (rec body) treeSpan
+    App sp f x -> App sp (go f) (go x)
 
-    Application f x treeSpan -> Application (rec f) (rec x) treeSpan
+    var@(Var sp (Ident identSp identText))
+        | identText == oldName -> Var sp (Ident identSp newName)
+        | otherwise -> var
 
-    Variable name nameSpan treeSpan
-        | name == name1 -> Variable name2 nameSpan treeSpan
-        | otherwise     -> tree
-
-    Value inner treeSpan -> Value (rec inner) treeSpan
-
-    _ -> error "impossible"
+    Val sp inner -> Val sp (go inner)
     where
-        rec = alphaConvert name1 name2
+        go = alphaConvert oldName newName
 
-newName :: Text -> Set Text -> Text
-newName old used =
+generateName :: Text -> Set Text -> Text
+generateName old used =
     let pre = T.dropWhileEnd isDigit old
     in head . filter (`S.notMember` used) $ (pre <>) . T.pack . (show @Integer) <$> [1..]
 
-pretty :: Tree -> String
+pretty :: Expr -> String
 pretty = \case
-    (Abstraction param _ body _) -> "λ" <> T.unpack param <> ". " <> pretty body
+    Abs _ (Ident _ param) body -> "λ" <> T.unpack param <> ". " <> pretty body
 
-    (Application f x _) -> go True f <> " " <> go False x
+    App _ f x -> go True f <> " " <> go False x
         where
-            go _ lam@(Abstraction _ _ _ _) = "(" <> pretty lam <> ")"
-            go l app@(Application _ _ _) = if l then pretty app else "(" <> pretty app <> ")"
-            go l (Value inner _) = go l inner
+            go _ lam@(Abs _ _ _) = "(" <> pretty lam <> ")"
+            go l app@(App _ _ _) = if l then pretty app else "(" <> pretty app <> ")"
+            go l (Val _ inner) = go l inner
             go _ tree = pretty tree
 
-    (Variable name _ _) -> T.unpack name
+    Var _ (Ident _ name) -> T.unpack name
 
-    (Value inner _) -> pretty inner
-
-    _ -> error "impossible"
+    Val _ inner -> pretty inner

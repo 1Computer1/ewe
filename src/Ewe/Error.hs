@@ -1,5 +1,3 @@
-{-# LANGUAGE NamedFieldPuns, ViewPatterns #-}
-
 module Ewe.Error
     ( mkErr
     , mkErrs

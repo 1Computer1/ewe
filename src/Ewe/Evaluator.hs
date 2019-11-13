@@ -1,5 +1,3 @@
-{-# LANGUAGE FlexibleContexts, LambdaCase, NamedFieldPuns, OverloadedStrings, TypeApplications #-}
-
 module Ewe.Evaluator
     ( Error
     , Env

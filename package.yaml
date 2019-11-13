@@ -13,6 +13,17 @@ synopsis:            Language for the lambda calculus
 category:            Language
 description:         Please see the README
 
+default-extensions:
+- FlexibleContexts
+- FlexibleInstances
+- FunctionalDependencies
+- LambdaCase
+- MultiParamTypeClasses
+- NamedFieldPuns
+- OverloadedStrings
+- TypeApplications
+- ViewPatterns
+
 dependencies:
 - base
 - containers

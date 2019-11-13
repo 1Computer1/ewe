@@ -1,5 +1,3 @@
-{-# LANGUAGE FlexibleContexts, NamedFieldPuns #-}
-
 module Repl (repl) where
 
 import Control.Monad.State.Strict

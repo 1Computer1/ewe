@@ -1,30 +1,18 @@
-{-# LANGUAGE NamedFieldPuns, OverloadedStrings, PatternSynonyms, TypeApplications  #-}
-
 module Ewe.Parser
     ( Parser
     , Span
-    , Identifier(..)
-    , Definition(..)
-    , Tree(..)
-    , Node(..)
-    , pattern Abstraction
-    , pattern Application
-    , pattern Variable
-    , pattern Value
     , program
     , definition
     , expression
+    , module Ewe.Syntax
     ) where
 
-import Data.Text (Text)
 import qualified Data.Text as T
-
-import Text.Megaparsec
-import Text.Megaparsec.Char
+import           Ewe.Syntax
+import           Ewe.Types
+import           Text.Megaparsec
+import           Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer as L
-
-import Ewe.Syntax
-import Ewe.Types
 
 {-
     Program     = Definition* EOF
@@ -36,6 +24,7 @@ import Ewe.Types
     Identifier  = (AlphaNum | "_")+
 -}
 
+{-
 pattern Abstraction :: Text -> Span -> Tree -> Span -> Tree
 pattern Abstraction idName idSpan body treeSpan = Tree { treeNode = Abs (Identifier { idName, idSpan }) body, treeSpan }
 
@@ -47,6 +36,7 @@ pattern Variable idName idSpan treeSpan = Tree { treeNode = Var (Identifier { id
 
 pattern Value :: Tree -> Span -> Tree
 pattern Value inner treeSpan = Tree { treeNode = Val inner, treeSpan }
+-}
 
 ws :: Parser ()
 ws = L.space space1 line block
@@ -61,51 +51,56 @@ withSpan f = do
     p2 <- getOffset
     pure (x, Known p1 p2)
 
-program :: Parser [Definition]
+program :: Parser [Defn]
 program = ws *> many (definition <* ws) <* eof
 
-definition :: Parser Definition
+definition :: Parser Defn
 definition = do
-    ((defIdent, defBody), defSpan) <- withSpan $ (,) <$> identifier <*> (ws *> eq *> ws *> expression <* ws <* end)
-    pure $ Definition { defIdent, defBody, defSpan }
+    ((ident, body), span) <- withSpan $ (,) <$> identifier <*> (ws *> eq *> ws *> expression <* ws <* end)
+    pure $ Defn span ident body
     where
         eq  = choice . map string $ ["=", ":=", "≔", "≝", "≡"]
         end = char ';'
 
-expression :: Parser Tree
+expression :: Parser Expr
 expression = lambda <|> application
 
-lambda :: Parser Tree
+lambda :: Parser Expr
 lambda = do
     p1 <- getOffset
     args <- fun *> some (ws *> identifier) <* ws <* arr <* ws
     body <- expression
     p2 <- getOffset
-    let treeSpan = Known p1 p2
-        assoc ident acc = Tree { treeNode = Abs ident acc, treeSpan }
-        a1 = Tree { treeNode = Abs (last args) body, treeSpan }
+    let span = Known p1 p2
+        assoc = Abs span
+        a1 = Abs span (last args) body
     pure $ foldr assoc a1 (init args)
     where
         fun = choice . map string $ ["\\", "λ", "^"]
         arr = choice . map string $ [".", "->", "→", "=>", "⇒"]
 
-application :: Parser Tree
+application :: Parser Expr
 application = do
     f1 <- atom
     fs <- many (ws *> atom)
     pure $ foldl1 assoc (f1:fs)
     where
-        assoc f x = Tree { treeNode = App f x, treeSpan = treeSpan f <> treeSpan x }
+        assoc f x = App (getSpan f <> getSpan x) f x
 
-atom :: Parser Tree
-atom = do
-    (treeNode, treeSpan) <- withSpan $ ident <|> grouped
-    pure $ Tree { treeNode, treeSpan }
-    where
-        ident   = Var <$> identifier
-        grouped = Val <$> (char '(' *> ws *> expression <* ws <* char ')')
+atom :: Parser Expr
+atom = var <|> group
 
-identifier :: Parser Identifier
+var :: Parser Expr
+var = do
+    (ident, span) <- withSpan identifier
+    pure $ Var span ident
+
+group :: Parser Expr
+group = do
+    (expr, span) <- withSpan $ char '(' *> ws *> expression <* ws <* char ')'
+    pure $ Val span expr
+
+identifier :: Parser Ident
 identifier = do
-    (idName, idSpan) <- withSpan $ T.pack <$> (some (alphaNumChar <|> char '_'))
-    pure $ Identifier { idName, idSpan }
+    (name, span) <- withSpan $ T.pack <$> (some $ alphaNumChar <|> char '_')
+    pure $ Ident span name

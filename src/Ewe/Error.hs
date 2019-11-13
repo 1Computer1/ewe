@@ -4,17 +4,16 @@ module Ewe.Error
     , prettyError
     ) where
 
-import Data.List (intercalate)
+import           Data.List (intercalate)
 import qualified Data.Text as T
-import Text.Megaparsec
+import           Ewe.Types
+import           Text.Megaparsec
 
-import Ewe.Types
+mkErr :: Span -> String -> Error
+mkErr span msg = Error [ErrorData span msg]
 
-mkErr :: String -> Span -> Error
-mkErr msg span_ = Error [ErrorData msg span_]
-
-mkErrs :: [(String, Span)] -> Error
-mkErrs = Error . map (\(msg, span_) -> ErrorData msg span_)
+mkErrs :: [(Span, String)] -> Error
+mkErrs = Error . map (uncurry ErrorData)
 
 formatLine
     :: SourcePos
@@ -80,7 +79,7 @@ extractSourcePos (SourcePos { sourceName, sourceLine, sourceColumn }) = (sourceN
 prettyError :: FilePath -> T.Text -> Error -> String
 prettyError file input (Error xs) = intercalate "\n\n" (map format xs)
     where
-        format (ErrorData msg (Known so eo)) =
+        format (ErrorData (Known so eo) msg) =
             if length offendingLines == 1
                 then formatLine spos1 (head offendingLines) pointerLength msg
                 else formatLines (spos1, spos2) offendingLines msg
@@ -90,4 +89,4 @@ prettyError file input (Error xs) = intercalate "\n\n" (map format xs)
                 posState = initialPosState file input
                 offendingLines = map T.unpack . take (line2 - line1 + 1) . drop (line1 - 1) $ T.lines input
                 pointerLength = eo - so
-        format (ErrorData msg Unknown) = file <> ":\n" <> msg
+        format (ErrorData Unknown msg) = file <> ":\n" <> msg

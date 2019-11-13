@@ -7,20 +7,20 @@ module Ewe.Evaluator
     , pretty
     ) where
 
-import Control.Monad.Reader
-import Control.Monad.Except
+import           Control.Monad.Except
+import           Control.Monad.Reader
 
-import Data.Char
-import Data.Map (Map)
+import           Data.Char
 import qualified Data.Map as M
-import Data.Set (Set)
+import           Data.Map (Map)
 import qualified Data.Set as S
-import Data.Text (Text)
+import           Data.Set (Set)
 import qualified Data.Text as T
+import           Data.Text (Text)
 
-import Ewe.Types
-import Ewe.Parser
-import Ewe.Error
+import           Ewe.Error
+import           Ewe.Parser
+import           Ewe.Types
 
 type Env = Map Text (Maybe Tree)
 

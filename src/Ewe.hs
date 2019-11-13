@@ -1,18 +1,18 @@
 module Ewe where
 
-import Control.Monad (join)
-import Control.Monad.Reader (runReaderT)
-import Control.Monad.Except (runExcept)
+import           Control.Monad (join)
+import           Control.Monad.Except (runExcept)
+import           Control.Monad.Reader (runReaderT)
 
-import Data.Bifunctor (bimap, first)
+import           Data.Bifunctor (bimap, first)
 import qualified Data.Map as M
 import qualified Data.Text as T
 
-import Text.Megaparsec (runParser, errorBundlePretty)
+import           Ewe.Error (prettyError)
 
-import Ewe.Parser (Definition, Tree, program, definition, expression)
-import Ewe.Evaluator (Env, mkEnv, prelude, evaluateNormal, pretty)
-import Ewe.Error (prettyError)
+import           Ewe.Evaluator (Env, mkEnv, prelude, evaluateNormal, pretty)
+import           Ewe.Parser (Definition, Tree, program, definition, expression)
+import           Text.Megaparsec (runParser, errorBundlePretty)
 
 parseProgram :: FilePath -> T.Text -> Either String [Definition]
 parseProgram path src = do

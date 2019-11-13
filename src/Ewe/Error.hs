@@ -10,7 +10,7 @@ import           Ewe.Types
 import           Text.Megaparsec
 
 mkErr :: Span -> String -> Error
-mkErr span msg = Error [ErrorData span msg]
+mkErr sp msg = Error [ErrorData sp msg]
 
 mkErrs :: [(Span, String)] -> Error
 mkErrs = Error . map (uncurry ErrorData)

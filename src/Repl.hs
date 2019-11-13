@@ -8,7 +8,7 @@ import qualified Data.Text as T
 import           Ewe
 
 import           Ewe.Evaluator (Env, prelude)
-import           Ewe.Parser (Definition(..), Identifier(..))
+import           Ewe.Parser (Defn(..), Ident(..))
 import           System.Console.Repline
 
 type Repl = HaskelineT (StateT Env IO)
@@ -27,7 +27,7 @@ handleInput input = do
                 case evaluateExpression' path src env res of
                     Left err -> liftIO $ putStrLn err
                     Right x  -> liftIO $ putStrLn x
-        Right (Definition { defIdent = Identifier { idName }, defBody }) -> modify' (M.insert idName (Just defBody))
+        Right (Defn _ (Ident _ name) body) -> modify' (M.insert name (Just body))
 
 commands :: [(String, [String] -> Repl ())]
 commands =

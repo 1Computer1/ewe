@@ -1,12 +1,12 @@
-module Repl (repl) where
+module Repl
+    ( repl
+    ) where
 
 import           Control.Monad.State.Strict
 import           Data.List
-
 import qualified Data.Map as M
 import qualified Data.Text as T
 import           Ewe
-
 import           Ewe.Evaluator (Env, prelude)
 import           Ewe.Parser (Defn(..), Ident(..))
 import           System.Console.Repline

@@ -1,12 +1,13 @@
-module Ewe.Error
+module Ewe.Language.Error
     ( mkErr
     , mkErrs
     , prettyError
+    , prettyParserError
     ) where
 
 import           Data.List (intercalate)
 import qualified Data.Text as T
-import           Ewe.Types
+import           Ewe.Language.Types
 import           Text.Megaparsec
 
 mkErr :: Span -> String -> Error
@@ -76,8 +77,8 @@ initialPosState file input = PosState
 extractSourcePos :: SourcePos -> (FilePath, Int, Int)
 extractSourcePos (SourcePos { sourceName, sourceLine, sourceColumn }) = (sourceName, unPos sourceLine, unPos sourceColumn)
 
-prettyError :: FilePath -> T.Text -> Error -> String
-prettyError file input (Error xs) = intercalate "\n\n" (map format xs)
+prettyError :: Source -> Error -> String
+prettyError (path, src) (Error xs) = intercalate "\n\n" (map format xs)
     where
         format (ErrorData (Known so eo) msg) =
             if length offendingLines == 1
@@ -86,7 +87,10 @@ prettyError file input (Error xs) = intercalate "\n\n" (map format xs)
             where
                 (spos1@SourcePos { sourceLine = (unPos -> line1) }, state) = reachOffsetNoLine so posState
                 (spos2@SourcePos { sourceLine = (unPos -> line2) }, _)     = reachOffsetNoLine eo state
-                posState = initialPosState file input
-                offendingLines = map T.unpack . take (line2 - line1 + 1) . drop (line1 - 1) $ T.lines input
+                posState = initialPosState path src
+                offendingLines = map T.unpack . take (line2 - line1 + 1) . drop (line1 - 1) $ T.lines src
                 pointerLength = eo - so
-        format (ErrorData Unknown msg) = file <> ":\n" <> msg
+        format (ErrorData Unknown msg) = path <> ":\n" <> msg
+
+prettyParserError :: ParserError -> String
+prettyParserError = errorBundlePretty

@@ -1,11 +1,11 @@
-module Ewe.Syntax
+module Ewe.Language.Untyped.Syntax
     ( Ident(..)
     , Defn(..)
     , Expr(..)
     ) where
 
 import Data.Text (Text)
-import Ewe.Types
+import Ewe.Language.Types
 
 data Ident = Ident
     { identSpan :: Span

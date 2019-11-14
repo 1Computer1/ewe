@@ -1,5 +1,7 @@
-module Ewe.Types
+module Ewe.Language.Types
     ( Parser
+    , ParserError
+    , Source
     , Span(..)
     , Error(..)
     , ErrorData(..)
@@ -8,9 +10,13 @@ module Ewe.Types
 
 import Data.Text (Text)
 import Data.Void (Void)
-import Text.Megaparsec (Parsec)
+import Text.Megaparsec (Parsec, ParseErrorBundle)
 
 type Parser = Parsec Void Text
+
+type ParserError = ParseErrorBundle Text Void
+
+type Source = (FilePath, Text)
 
 data Span
     = Known Int Int

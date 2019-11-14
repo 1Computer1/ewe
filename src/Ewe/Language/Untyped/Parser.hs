@@ -1,14 +1,13 @@
-module Ewe.Parser
+module Ewe.Language.Untyped.Parser
     ( program
     , definition
     , expression
-    , module Ewe.Syntax
-    , module Ewe.Types
+    , module Ewe.Language.Untyped.Syntax
     ) where
 
 import qualified Data.Text as T
-import           Ewe.Syntax
-import           Ewe.Types
+import           Ewe.Language.Types
+import           Ewe.Language.Untyped.Syntax
 import           Text.Megaparsec
 import           Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer as L

@@ -1,4 +1,4 @@
-module Ewe.Evaluator
+module Ewe.Language.Untyped.Evaluator
     ( Error
     , Env
     , prelude
@@ -9,7 +9,6 @@ module Ewe.Evaluator
 
 import           Control.Monad.Except
 import           Control.Monad.Reader
-
 import           Data.Char
 import qualified Data.Map as M
 import           Data.Map (Map)
@@ -17,9 +16,9 @@ import qualified Data.Set as S
 import           Data.Set (Set)
 import qualified Data.Text as T
 import           Data.Text (Text)
-
-import           Ewe.Error
-import           Ewe.Parser
+import           Ewe.Language.Error
+import           Ewe.Language.Types
+import           Ewe.Language.Untyped.Parser
 
 type Env = Map Text (Maybe Expr)
 

@@ -22,6 +22,7 @@ default-extensions:
 - NamedFieldPuns
 - OverloadedStrings
 - TypeApplications
+- TypeFamilies
 - ViewPatterns
 
 dependencies:

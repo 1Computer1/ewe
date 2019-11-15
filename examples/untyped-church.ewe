@@ -1,19 +1,19 @@
-succ = λn f x. f (n f x);
-pred = λn f x. n (λg h. h (g f)) (λu. x) (λu. u);
+succ = \n f x. f (n f x);
+pred = \n f x. n (\g h. h (g f)) (\u. x) (\u. u);
 
 0 = C K;
 1 = succ 0;
 2 = succ 1;
 3 = succ 2;
 
-add = λm n f x. m f (n f x);
-mul = λm n f x. m (n f) x;
+add = \m n f x. m f (n f x);
+mul = \m n f x. m (n f) x;
 
 true = K;
 false = C K;
 if = I;
-isZero = λn. n (K false) true;
+isZero = \n. n (K false) true;
 
-factorial = Y (λr n. if (isZero n) 1 (mul n (r (pred n))));
+factorial = Y (\r n. if (isZero n) 1 (mul n (r (pred n))));
 
 main = factorial 3;

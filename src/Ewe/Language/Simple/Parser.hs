@@ -15,45 +15,47 @@ import           Text.Megaparsec.Char
 
 {-
     Program       = Definition* EOF
-    Definition    = Identifier ":" Type "=" Expression ";"
-    Expression    = Lambda | Application
+    Definition    = Identifier "=" Expression ";"
+    Expression    = Lambda | Application | Branch
     Lambda        = "\" ("(" Identifier ":" Type ")")+ "." Expression
     Application   = Atom+
-    Atom          = Identifier | Integer | String | "(" Expression ")"
-    Integer       = Num+
-    String        = '"' StringChar* '"'
-    Identifier    = Lowercase (AlphaNum | "_")*
+    Branch        = "if" Expression "then" Expression "else" Expression
+    Atom          = Identifier | Integer | String | Bool | "(" Expression ")"
+    Integer       = [0-9]+
+    String        = '"' ('\"' | .)* '"'
+    Bool          = "true" | "false"
+    Identifier    = [a-z][A-Za-z0-9_]*
     Type          = TypeAtom ("->" TypeAtom)*
     TypeAtom      = TypeIdentifier | "(" Type ")"
-    TypeIdentifer = Uppercase (AlphaNum | "_")*
+    TypeIdentifer = [A-Z][A-Za-z0-9_]*
 -}
+
+keyword :: T.Text -> Parser ()
+keyword x = try $ string x *> notFollowedBy alphaNumChar
 
 program :: Parser [Defn]
 program = ws *> many (definition <* ws) <* eof
 
 definition :: Parser Defn
 definition = do
-    ((ident, typ, body), sp) <- withSpan $ do
+    ((ident, body), sp) <- withSpan $ do
         ident <- identifier <* ws
-        typ <- char ':' *> ws *> typeAnnotation <* ws
-        body <- eq *> ws *> expression <* ws <* end
-        pure (ident, typ, body)
-    pure $ Defn sp ident typ body
-    where
-        eq  = choice . map string $ ["=", ":=", "≔", "≝", "≡"]
-        end = char ';'
+        body <- char '=' *> ws *> expression <* ws <* char ';'
+        pure (ident, body)
+    pure $ Defn sp ident body
 
 expression :: Parser Expr
-expression = lambda <|> application
+expression = lambda <|> branch <|> application
 
 lambda :: Parser Expr
 lambda = do
     p1 <- getOffset
     void fun
-    args <- some $ do
-        param <- ws *> char '(' *> identifier <* ws <* arr <* ws
+    args <- some . try $ do
+        param <- ws *> char '(' *> identifier <* ws
         typ <- char ':' *> ws *> typeAnnotation <* ws <* char ')'
         pure (param, typ)
+    ws *> arr *> ws
     body <- expression
     p2 <- getOffset
     let sp = Known p1 p2
@@ -62,19 +64,46 @@ lambda = do
         a1 = Abs sp lastParam lastTyp body
     pure $ foldr assoc a1 (init args)
     where
-        fun = choice . map string $ ["\\", "λ", "^"]
-        arr = choice . map string $ [".", "->", "→", "=>", "⇒"]
+        fun = char '\\'
+        arr = string "->"
 
 application :: Parser Expr
 application = do
     f1 <- atom
-    fs <- many (ws *> atom)
+    fs <- many (try $ ws *> atom)
     pure $ foldl1 assoc (f1:fs)
     where
         assoc f x = App (getSpan f <> getSpan x) f x
 
+branch :: Parser Expr
+branch = do
+    p1 <- getOffset
+    keyword "if" *> ws
+    p <- expression <* ws
+    keyword "then" *> ws
+    q <- expression <* ws
+    keyword "else" *> ws
+    r <- expression
+    p2 <- getOffset
+    pure $ Branch (Known p1 p2) p q r
+
 atom :: Parser Expr
-atom = var <|> group
+atom = integer <|> stringp <|> boolean <|> var <|> group
+
+integer :: Parser Expr
+integer = do
+    (x, sp) <- withSpan (some digitChar)
+    pure $ LitInt sp (read x)
+
+stringp :: Parser Expr
+stringp = do
+    (x, sp) <- withSpan $ char '"' *> many (string "\\\"" <|> T.pack . pure <$> anySingleBut '"') <* char '"'
+    pure $ LitStr sp (T.concat x)
+
+boolean :: Parser Expr
+boolean = do
+    (x, sp) <- withSpan (True <$ keyword "true" <|> False <$ keyword "false")
+    pure $ LitBool sp x
 
 var :: Parser Expr
 var = do
@@ -87,18 +116,19 @@ group = do
     pure $ Val sp expr
 
 identifier :: Parser Ident
-identifier = do
+identifier = try $ do
     (name, sp) <- withSpan $ T.pack <$> ((:) <$> lowerChar <*> many (alphaNumChar <|> char '_'))
+    guard (name `notElem` ["if", "then", "else", "true", "false"])
     pure $ Ident sp name
 
 typeAnnotation :: Parser TypAnn
 typeAnnotation = do
     t1 <- typeAtom
-    ts <- many (ws *> arr *> ws *> typeAtom)
-    pure $ foldl1 assoc (t1:ts)
+    ts <- many (try $ ws *> arr *> ws *> typeAtom)
+    pure $ foldr1 assoc (t1:ts)
     where
-        arr = choice . map string $ ["->", "→", "=>", "⇒"]
-        assoc t1 t2 = TypArr (getSpan t1 <> getSpan t2) t1 t2
+        arr = string "->"
+        assoc t acc = TypAnnArr (getSpan t <> getSpan acc) t acc
 
 typeAtom :: Parser TypAnn
 typeAtom = typeVar <|> typeGroup
@@ -106,12 +136,12 @@ typeAtom = typeVar <|> typeGroup
 typeVar :: Parser TypAnn
 typeVar = do
     (ident, sp) <- withSpan typeIdentifier
-    pure $ TypVar sp ident
+    pure $ TypAnnVar sp ident
 
 typeGroup :: Parser TypAnn
 typeGroup = do
     (expr, sp) <- withSpan $ char '(' *> ws *> typeAnnotation <* ws <* char ')'
-    pure $ TypVal sp expr
+    pure $ TypAnnVal sp expr
 
 typeIdentifier :: Parser Ident
 typeIdentifier = do

@@ -27,4 +27,32 @@ Unicode syntax is also available:
 - `=` can also be `:=`, `≔`, `≝`, or `≡`.
 - `.` can also be `->`, `→`, `=>`, or `⇒`.
 
-See [here](./examples/church.ewe) for an example of Church encoding.  
+See [here](./examples/untyped-church.ewe) for an example of Church encoding.  
+
+## Simple
+
+Based on the simply typed lambda calculus.  
+Eager evaluation, statically typed, not very useful.  
+Contains integers, strings, and booleans, and some operations on them.  
+Use with `--language simple` or `-ls`.  
+
+```
+Program       = Definition* EOF
+Definition    = Identifier "=" Expression ";"
+Expression    = Lambda | Application | Branch
+Lambda        = "\" ("(" Identifier ":" Type ")")+ "." Expression
+Application   = Atom+
+Branch        = "if" Expression "then" Expression "else" Expression
+Atom          = Identifier | Integer | String | Bool | "(" Expression ")"
+Integer       = [0-9]+
+String        = '"' ('\"' | .)* '"'
+Bool          = "true" | "false"
+Identifier    = [a-z][A-Za-z0-9_]*
+Type          = TypeAtom ("->" TypeAtom)*
+TypeAtom      = TypeIdentifier | "(" Type ")"
+TypeIdentifer = [A-Z][A-Za-z0-9_]*
+```
+
+Line comments are done with `--`, block comments with `{- -}`.  
+
+See [here](./examples/simple-example.ewe) for an example.  

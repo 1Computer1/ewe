@@ -57,7 +57,9 @@ lang = option (maybeReader pLang) $
     <> metavar "LANG"
 
 pLang :: String -> Maybe ILang
-pLang x = ILang <$> case x of
-    "untyped" -> Just Untyped
-    "u" -> Just Untyped
+pLang x = case x of
+    "untyped" -> Just $ ILang Untyped
+    "u" -> Just $ ILang Untyped
+    "simple" -> Just $ ILang Simple
+    "s" -> Just $ ILang Simple
     _ -> Nothing

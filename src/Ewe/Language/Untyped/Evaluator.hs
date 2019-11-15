@@ -1,6 +1,5 @@
 module Ewe.Language.Untyped.Evaluator
-    ( Error
-    , Env
+    ( Env
     , prelude
     , mkEnv
     , evaluateNormal

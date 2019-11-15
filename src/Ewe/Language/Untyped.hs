@@ -35,6 +35,9 @@ instance Language Untyped where
 
     evalExpr _ env expr = runExcept . flip runReaderT env $ S.evaluateNormal expr
     
+    typeof _ _ _ = pure "no type information"
+
     prelude _ = S.prelude
     envKeys _ = M.keys
+
     pretty _ = S.pretty

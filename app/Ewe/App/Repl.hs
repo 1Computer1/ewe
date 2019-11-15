@@ -18,7 +18,7 @@ handleInput lang input = do
     case parseDefn lang source of
         Left errDefn -> case parseExpr lang source of
             Left errExpr -> putStrLn . prettyParserError $
-                if any (`isInfixOf` input) ["=", ":=", "≔", "≝", "≡"] then errDefn else errExpr
+                if "=" `isInfixOf` input then errDefn else errExpr
             Right res -> do
                 env <- get
                 case evalExpr lang env res of
@@ -31,17 +31,28 @@ handleInput lang input = do
                 Right (_, env') -> put env'
 
 commands :: Language lang => lang -> [(String, [String] -> Repl (Env lang) ())]
-commands _ =
+commands lang =
     [ ("help", help)
+    , ("type", showType)
+    , ("t", showType)
     , ("quit", quit)
     , ("q", quit)
     ]
     where
-        help _ = liftIO . putStr . unlines $
+        help _ = putStr . unlines $
             [ "Input a valid top-level definition to define a symbol or an expression to evaluate it."
             , "Press <TAB> for autocomplete."
             , "Type :quit or :q to exit."
             ]
+        showType xs =
+            let source = ("<repl>", T.pack $ unwords xs)
+            in case parseExpr lang source of
+                Left errExpr -> putStrLn $ prettyParserError errExpr
+                Right expr -> do
+                    env <- get
+                    case typeof lang env expr of
+                        Left errTyp -> putStrLn $ prettyError source errTyp
+                        Right typ -> putStrLn typ
         quit _ = abort
 
 completer :: (Language lang, Monad m, MonadState (Env lang) m) => lang -> WordCompleter m
@@ -50,7 +61,7 @@ completer lang x = do
     pure $ filter (isPrefixOf x) xs
 
 initial :: Language lang => lang -> Repl (Env lang) ()
-initial _ = liftIO . putStr . unlines $
+initial _ = putStr . unlines $
     [ "Welcome to the ewe REPL!"
     , "Type :help for help."
     ]

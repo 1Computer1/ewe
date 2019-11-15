@@ -18,6 +18,7 @@ class Language a where
     evalProgram :: a -> [Defn a] -> Either Error (Val a)
     evalDefn    :: a -> Env a -> Defn a -> Either Error (Val a, Env a)
     evalExpr    :: a -> Env a -> Expr a -> Either Error (Val a)
+    typeof      :: a -> Env a -> Expr a -> Either Error String
 
     prelude :: a -> Env a
     envKeys :: a -> Env a -> [Text]

@@ -39,6 +39,9 @@ instance Language Simple where
 
     evalExpr _ env expr = runExcept . flip runReaderT (M.map snd env) $ S.evaluate expr
 
+    typeof _ env expr = S.prettyType <$> runExcept (runReaderT (S.typecheck expr) (M.map fst env))
+
     prelude _ = S.prelude
     envKeys _ = M.keys
+
     pretty _ = S.pretty

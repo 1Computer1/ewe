@@ -16,8 +16,8 @@ import qualified Data.Set as S
 import           Data.Set (Set)
 import qualified Data.Text as T
 import           Data.Text (Text)
-import           Ewe.Language.Error
-import           Ewe.Language.Types
+import           Ewe.Language.Common.Error
+import           Ewe.Language.Common.Types
 import           Ewe.Language.Untyped.Parser
 
 type Env = Map Text (Maybe Expr)

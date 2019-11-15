@@ -7,11 +7,11 @@ import           Control.Monad.Except
 import           Control.Monad.Reader
 import qualified Data.Map as M
 import           Ewe.Language.Class
-import           Ewe.Language.Error
-import           Ewe.Language.Internal
+import           Ewe.Language.Common.Error
+import           Ewe.Language.Common.Types
 -- import qualified Ewe.Language.Simple.Evaluator as S
+import           Ewe.Language.Internal
 import qualified Ewe.Language.Simple.Parser as S
-import           Ewe.Language.Types
 
 data Simple = Simple
 

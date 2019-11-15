@@ -1,9 +1,9 @@
-module Ewe.Language.Parser
+module Ewe.Language.Common.Parser
     ( ws
     , withSpan
     ) where
 
-import           Ewe.Language.Types
+import           Ewe.Language.Common.Types
 import           Text.Megaparsec
 import           Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer as L

@@ -1,6 +1,8 @@
-module Ewe.Language.Internal where
+module Ewe.Language.Internal
+    ( defaultParse
+    ) where
 
-import Ewe.Language.Types
+import Ewe.Language.Common.Types
 import Text.Megaparsec
 
 defaultParse :: Parser a -> lang -> Source -> Either ParserError a

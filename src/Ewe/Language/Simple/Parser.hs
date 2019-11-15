@@ -7,9 +7,9 @@ module Ewe.Language.Simple.Parser
 
 import           Control.Monad
 import qualified Data.Text as T
-import           Ewe.Language.Parser
+import           Ewe.Language.Common.Parser
+import           Ewe.Language.Common.Types
 import           Ewe.Language.Simple.Syntax
-import           Ewe.Language.Types
 import           Text.Megaparsec
 import           Text.Megaparsec.Char
 

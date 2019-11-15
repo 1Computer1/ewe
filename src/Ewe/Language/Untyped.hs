@@ -7,9 +7,9 @@ import           Control.Monad.Except
 import           Control.Monad.Reader
 import qualified Data.Map as M
 import           Ewe.Language.Class
-import           Ewe.Language.Error
+import           Ewe.Language.Common.Error
+import           Ewe.Language.Common.Types
 import           Ewe.Language.Internal
-import           Ewe.Language.Types
 import qualified Ewe.Language.Untyped.Evaluator as S
 import qualified Ewe.Language.Untyped.Parser as S
 

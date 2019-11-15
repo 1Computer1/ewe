@@ -1,4 +1,4 @@
-module Ewe.Language.Error
+module Ewe.Language.Common.Error
     ( mkErr
     , mkErrs
     , prettyError
@@ -7,7 +7,7 @@ module Ewe.Language.Error
 
 import           Data.List (intercalate)
 import qualified Data.Text as T
-import           Ewe.Language.Types
+import           Ewe.Language.Common.Types
 import           Text.Megaparsec
 
 mkErr :: Span -> String -> Error

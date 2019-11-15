@@ -6,8 +6,8 @@ module Ewe.Language.Untyped.Parser
     ) where
 
 import qualified Data.Text as T
-import           Ewe.Language.Parser
-import           Ewe.Language.Types
+import           Ewe.Language.Common.Parser
+import           Ewe.Language.Common.Types
 import           Ewe.Language.Untyped.Syntax
 import           Text.Megaparsec
 import           Text.Megaparsec.Char

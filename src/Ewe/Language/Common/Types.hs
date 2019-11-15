@@ -1,4 +1,4 @@
-module Ewe.Language.Types
+module Ewe.Language.Common.Types
     ( Parser
     , ParserError
     , Source

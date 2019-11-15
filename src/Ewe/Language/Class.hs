@@ -3,7 +3,7 @@ module Ewe.Language.Class
     ) where
 
 import Data.Text (Text)
-import Ewe.Language.Types
+import Ewe.Language.Common.Types
 
 class Language a where
     type Defn a

@@ -5,7 +5,7 @@ module Ewe.Language.Untyped.Syntax
     ) where
 
 import Data.Text (Text)
-import Ewe.Language.Types
+import Ewe.Language.Common.Types
 
 data Ident = Ident
     { identSpan :: Span

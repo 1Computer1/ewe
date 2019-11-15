@@ -36,7 +36,7 @@ expression = lambda <|> application
 lambda :: Parser Expr
 lambda = do
     p1 <- getOffset
-    args <- char '.' *> some (ws *> identifier) <* ws <* char '.' <* ws
+    args <- char '\\' *> some (ws *> identifier) <* ws <* char '.' <* ws
     body <- expression
     p2 <- getOffset
     let sp = Known p1 p2

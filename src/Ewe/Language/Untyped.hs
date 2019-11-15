@@ -40,4 +40,5 @@ instance Language Untyped where
     prelude _ = S.prelude
     envKeys _ = M.keys
 
+    langName _ = "Untyped"
     pretty _ = S.pretty

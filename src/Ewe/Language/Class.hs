@@ -23,4 +23,5 @@ class Language a where
     prelude :: a -> Env a
     envKeys :: a -> Env a -> [Text]
 
+    langName :: a -> String
     pretty :: a -> Val a -> String

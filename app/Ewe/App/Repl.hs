@@ -42,6 +42,7 @@ commands lang =
         help _ = putStr . unlines $
             [ "Input a valid top-level definition to define a symbol or an expression to evaluate it."
             , "Press <TAB> for autocomplete."
+            , "Type :type or :t to get the type of an expression."
             , "Type :quit or :q to exit."
             ]
         showType xs =
@@ -61,15 +62,16 @@ completer lang x = do
     pure $ filter (isPrefixOf x) xs
 
 initial :: Language lang => lang -> Repl (Env lang) ()
-initial _ = putStr . unlines $
+initial lang = putStr . unlines $
     [ "Welcome to the ewe REPL!"
+    , "Language in use: " <> langName lang
     , "Type :help for help."
     ]
 
 repl :: Language lang => lang -> IO ()
 repl lang = evalStateT (evalRepl prompt handle cmds cmdPrefix compl splash) env
     where
-        prompt = pure "λ> "
+        prompt = pure $ langName lang <> "> "
         handle = handleInput lang
         cmds = commands lang
         cmdPrefix = Just ':'

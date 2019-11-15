@@ -44,4 +44,5 @@ instance Language Simple where
     prelude _ = S.prelude
     envKeys _ = M.keys
 
+    langName _ = "Simple"
     pretty _ = S.pretty

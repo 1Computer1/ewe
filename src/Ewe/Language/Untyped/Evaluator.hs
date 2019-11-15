@@ -159,7 +159,7 @@ generateName old used =
 
 pretty :: Expr -> String
 pretty = \case
-    Abs _ (Ident _ param) body -> "λ" <> T.unpack param <> ". " <> pretty body
+    Abs _ (Ident _ param) body -> "\\" <> T.unpack param <> ". " <> pretty body
 
     App _ f x -> go True f <> " " <> go False x
         where

@@ -19,7 +19,7 @@ import           Text.Megaparsec.Char
     Lambda      = "\" Identifier+ "." Expression
     Application = Atom+
     Atom        = Identifier | "(" Expression ")"
-    Identifier  = (AlphaNum | "_")+
+    Identifier  = [A-Za-z0-9_]+
 -}
 
 program :: Parser [Defn]
@@ -27,11 +27,8 @@ program = ws *> many (definition <* ws) <* eof
 
 definition :: Parser Defn
 definition = do
-    ((ident, body), sp) <- withSpan $ (,) <$> identifier <*> (ws *> eq *> ws *> expression <* ws <* end)
+    ((ident, body), sp) <- withSpan $ (,) <$> identifier <*> (ws *> char '=' *> ws *> expression <* ws <* char ';')
     pure $ Defn sp ident body
-    where
-        eq  = choice . map string $ ["=", ":=", "≔", "≝", "≡"]
-        end = char ';'
 
 expression :: Parser Expr
 expression = lambda <|> application
@@ -39,16 +36,13 @@ expression = lambda <|> application
 lambda :: Parser Expr
 lambda = do
     p1 <- getOffset
-    args <- fun *> some (ws *> identifier) <* ws <* arr <* ws
+    args <- char '.' *> some (ws *> identifier) <* ws <* char '.' <* ws
     body <- expression
     p2 <- getOffset
     let sp = Known p1 p2
         assoc = Abs sp
         a1 = Abs sp (last args) body
     pure $ foldr assoc a1 (init args)
-    where
-        fun = choice . map string $ ["\\", "λ", "^"]
-        arr = choice . map string $ [".", "->", "→", "=>", "⇒"]
 
 application :: Parser Expr
 application = do

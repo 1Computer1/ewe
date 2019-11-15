@@ -6,11 +6,11 @@ module Ewe.Language.Untyped.Parser
     ) where
 
 import qualified Data.Text as T
+import           Ewe.Language.Parser
 import           Ewe.Language.Types
 import           Ewe.Language.Untyped.Syntax
 import           Text.Megaparsec
 import           Text.Megaparsec.Char
-import qualified Text.Megaparsec.Char.Lexer as L
 
 {-
     Program     = Definition* EOF
@@ -21,19 +21,6 @@ import qualified Text.Megaparsec.Char.Lexer as L
     Atom        = Identifier | "(" Expression ")"
     Identifier  = (AlphaNum | "_")+
 -}
-
-ws :: Parser ()
-ws = L.space space1 line block
-    where
-        line  = L.skipLineComment "--"
-        block = L.skipBlockCommentNested "{-" "-}"
-
-withSpan :: Parser a -> Parser (a, Span)
-withSpan f = do
-    p1 <- getOffset
-    x <- f
-    p2 <- getOffset
-    pure (x, Known p1 p2)
 
 program :: Parser [Defn]
 program = ws *> many (definition <* ws) <* eof

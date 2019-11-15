@@ -52,63 +52,63 @@ type CheckM = ReaderT TypEnv (Except Error)
 prelude :: BothEnv
 prelude = M.fromList
     [ ("add",
-        ( int -: int -: int
+        ( int -:> int -:> int
         , fun $ \(ValInt x) -> pure . fun $ \(ValInt y) -> pure . ValInt $ x + y
         ))
     , ("sub",
-        ( int -: int -: int
+        ( int -:> int -:> int
         , fun $ \(ValInt x) -> pure . fun $ \(ValInt y) -> pure . ValInt $ x - y
         ))
     , ("mul",
-        ( int -: int -: int
+        ( int -:> int -:> int
         , fun $ \(ValInt x) -> pure . fun $ \(ValInt y) -> pure . ValInt $ x * y
         ))
     , ("div",
-        ( int -: int -: int
+        ( int -:> int -:> int
         , fun $ \(ValInt x) -> pure . fun $ \(ValInt y) -> if y == 0
             then throwError . mkErr Unknown $ "division by 0"
             else pure . ValInt $ x `div` y
         ))
     , ("negate",
-        ( int -: int
+        ( int -:> int
         , fun $ \(ValInt x) -> pure . ValInt $ negate x
         ))
     , ("concat",
-        ( str -: str -: str
+        ( str -:> str -:> str
         , fun $ \(ValStr x) -> pure . fun $ \(ValStr y) -> pure . ValStr $ x <> y
         ))
     , ("length",
-        ( str -: int
+        ( str -:> int
         , fun $ \(ValStr x) -> pure . ValInt . fromIntegral $ T.length x
         ))
     , ("int_eq",
-        ( int -: int -: bool
+        ( int -:> int -:> bool
         , fun $ \(ValInt x) -> pure . fun $ \(ValInt y) -> pure . ValBool $ x == y
         ))
     , ("str_eq",
-        ( str -: str -: bool
+        ( str -:> str -:> bool
         , fun $ \(ValStr x) -> pure . fun $ \(ValStr y) -> pure . ValBool $ x == y
         ))
     , ("iff",
-        ( bool -: bool -: bool
+        ( bool -:> bool -:> bool
         , fun $ \(ValBool x) -> pure . fun $ \(ValBool y) -> pure . ValBool $ x == y
         ))
     , ("not",
-        ( bool -: bool
+        ( bool -:> bool
         , fun $ \(ValBool x) -> pure . ValBool $ not x
         ))
     , ("and",
-        ( bool -: bool -: bool
+        ( bool -:> bool -:> bool
         , fun $ \(ValBool x) -> pure . fun $ \(ValBool y) -> pure . ValBool $ x && y
         ))
     , ("or",
-        ( bool -: bool -: bool
+        ( bool -:> bool -:> bool
         , fun $ \(ValBool x) -> pure . fun $ \(ValBool y) -> pure . ValBool $ x || y
         ))
     ]
     where
-        infixr 2 -:
-        (-:) = TypArr
+        infixr 2 -:>
+        (-:>) = TypArr
         int = TypInt
         str = TypStr
         bool = TypBool
@@ -147,19 +147,19 @@ evaluate = \case
         case fVal of
             ValFun (Ident _ param) body env -> local (const $ M.insert param xVal env) (evaluate body)
             ValFunPrim g -> lift $ g xVal
-            _ -> error "impossible"
+            _ -> error "impossible: app of non-function"
 
     Branch _ p q r -> do
         pVal <- evaluate p
         case pVal of
             ValBool True -> evaluate q
             ValBool False -> evaluate r
-            _ -> error "impossible"
+            _ -> error "impossible: non-boolean condition"
 
     Var _ (Ident _ name) -> do
-        entry <- asks (M.lookup name)
+        entry <- asks $ M.lookup name
         case entry of
-            Nothing -> error "impossible"
+            Nothing -> error "impossible: undefined variable"
             Just x -> pure x
 
     LitInt _ x -> pure $ ValInt x

@@ -1,3 +1,5 @@
 exclaim = \(x: Str) -> concat x "!";
+
 maths = \(n: Int) (m: Int) -> if int_eq n (add 1 m) then 1000 else 0;
+
 main = maths 7 (length (exclaim "hello"));

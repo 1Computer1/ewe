@@ -3,8 +3,6 @@ module Ewe.Language.Untyped
     ) where
 
 import           Control.Monad
-import           Control.Monad.Except
-import           Control.Monad.Reader
 import qualified Data.Map as M
 import           Ewe.Language.Class
 import           Ewe.Language.Common.Error
@@ -29,11 +27,11 @@ instance Language Untyped where
         env <- S.mkEnv defns
         case join (M.lookup "main" env) of
             Nothing -> Left $ mkErr Unknown "a symbol named main must be defined"
-            Just x  -> runExcept . flip runReaderT env $ S.evaluateNormal x
+            Just x  -> runUsual env (S.evaluateNormal x)
 
     evalDefn _ env (S.Defn _ (S.Ident _ name) body) = pure (body, M.insert name (Just body) env)
 
-    evalExpr _ env expr = runExcept . flip runReaderT env $ S.evaluateNormal expr
+    evalExpr _ env expr = runUsual env (S.evaluateNormal expr)
     
     typeof _ _ _ = pure "no type information"
 

@@ -16,11 +16,11 @@ import           Text.Megaparsec.Char
 {-
     Program       = Definition* EOF
     Definition    = Identifier "=" Expression ";"
-    Expression    = Lambda | Application | Branch
+    Expression    = Lambda | Branch | Application
     Lambda        = "\" ("(" Identifier ":" Type ")")+ "." Expression
     Application   = Atom+
     Branch        = "if" Expression "then" Expression "else" Expression
-    Atom          = Identifier | Integer | String | Bool | "(" Expression ")"
+    Atom          = Integer | String | Bool | Identifier | "(" Expression ")"
     Integer       = [0-9]+
     String        = '"' ('\"' | .)* '"'
     Bool          = "true" | "false"
@@ -30,19 +30,18 @@ import           Text.Megaparsec.Char
     TypeIdentifer = [A-Z][A-Za-z0-9_]*
 -}
 
-keyword :: T.Text -> Parser ()
-keyword x = try $ string x *> notFollowedBy alphaNumChar
-
 program :: Parser [Defn]
 program = ws *> many (definition <* ws) <* eof
 
 definition :: Parser Defn
 definition = do
-    ((ident, body), sp) <- withSpan $ do
-        ident <- identifier <* ws
-        body <- char '=' *> ws *> expression <* ws <* char ';'
-        pure (ident, body)
-    pure $ Defn sp ident body
+    p1 <- getOffset
+    ident <- identifier <* ws
+    char_ '=' <* ws
+    body <- expression <* ws
+    char_ ';'
+    p2 <- getOffset
+    pure $ Defn (Known p1 p2) ident body
 
 expression :: Parser Expr
 expression = lambda <|> branch <|> application
@@ -50,12 +49,17 @@ expression = lambda <|> branch <|> application
 lambda :: Parser Expr
 lambda = do
     p1 <- getOffset
-    void fun
+    char_ '\\'
     args <- some . try $ do
-        param <- ws *> char '(' *> identifier <* ws
-        typ <- char ':' *> ws *> typeAnnotation <* ws <* char ')'
+        ws
+        char_ '(' <* ws
+        param <- identifier <* ws
+        char_ ':' <* ws
+        typ <- typeAnnotation <* ws
+        char_ ')'
         pure (param, typ)
-    ws *> arr *> ws
+    ws
+    string_ "->" <* ws
     body <- expression
     p2 <- getOffset
     let sp = Known p1 p2
@@ -63,14 +67,11 @@ lambda = do
         (lastParam, lastTyp) = last args
         a1 = Abs sp lastParam lastTyp body
     pure $ foldr assoc a1 (init args)
-    where
-        fun = char '\\'
-        arr = string "->"
 
 application :: Parser Expr
 application = do
     f1 <- atom
-    fs <- many (try $ ws *> atom)
+    fs <- many . try $ ws *> atom
     pure $ foldl1 assoc (f1:fs)
     where
         assoc f x = App (getSpan f <> getSpan x) f x
@@ -78,11 +79,11 @@ application = do
 branch :: Parser Expr
 branch = do
     p1 <- getOffset
-    keyword "if" *> ws
+    keyword "if" <* ws
     p <- expression <* ws
-    keyword "then" *> ws
+    keyword "then" <* ws
     q <- expression <* ws
-    keyword "else" *> ws
+    keyword "else" <* ws
     r <- expression
     p2 <- getOffset
     pure $ Branch (Known p1 p2) p q r
@@ -92,18 +93,20 @@ atom = integer <|> stringp <|> boolean <|> var <|> group
 
 integer :: Parser Expr
 integer = do
-    (x, sp) <- withSpan (some digitChar)
-    pure $ LitInt sp (read x)
+    (x, sp) <- withSpan integerLike
+    pure $ LitInt sp x
 
 stringp :: Parser Expr
 stringp = do
-    (x, sp) <- withSpan $ char '"' *> many (string "\\\"" <|> T.pack . pure <$> anySingleBut '"') <* char '"'
-    pure $ LitStr sp (T.concat x)
+    (x, sp) <- withSpan stringLike
+    pure $ LitStr sp x
 
 boolean :: Parser Expr
 boolean = do
-    (x, sp) <- withSpan (True <$ keyword "true" <|> False <$ keyword "false")
+    (x, sp) <- withSpan bools
     pure $ LitBool sp x
+    where
+        bools = True <$ keyword "true" <|> False <$ keyword "false"
 
 var :: Parser Expr
 var = do
@@ -117,17 +120,18 @@ group = do
 
 identifier :: Parser Ident
 identifier = try $ do
-    (name, sp) <- withSpan $ T.pack <$> ((:) <$> lowerChar <*> many (alphaNumChar <|> char '_'))
-    guard (name `notElem` ["if", "then", "else", "true", "false"])
+    (name, sp) <- withSpan $ T.pack <$> inner
+    guard $ name `notElem` ["if", "then", "else", "true", "false"]
     pure $ Ident sp name
+    where
+        inner = (:) <$> lowerChar <*> many (alphaNumChar <|> char '_')
 
 typeAnnotation :: Parser TypAnn
 typeAnnotation = do
     t1 <- typeAtom
-    ts <- many (try $ ws *> arr *> ws *> typeAtom)
+    ts <- many . try $ ws *> string_ "->" *> ws *> typeAtom
     pure $ foldr1 assoc (t1:ts)
     where
-        arr = string "->"
         assoc t acc = TypAnnArr (getSpan t <> getSpan acc) t acc
 
 typeAtom :: Parser TypAnn
@@ -145,5 +149,7 @@ typeGroup = do
 
 typeIdentifier :: Parser Ident
 typeIdentifier = do
-    (name, sp) <- withSpan $ T.pack <$> ((:) <$> upperChar <*> many (alphaNumChar <|> char '_'))
+    (name, sp) <- withSpan $ T.pack <$> inner
     pure $ Ident sp name
+    where
+        inner = (:) <$> upperChar <*> many (alphaNumChar <|> char '_')

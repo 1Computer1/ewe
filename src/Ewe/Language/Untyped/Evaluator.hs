@@ -57,7 +57,7 @@ evaluateNormal expr = do
     expr' <- evaluate expr
     case expr' of
         Abs sp (Ident paramSp param) body -> do
-            body' <- local (M.insert param Nothing) $ evaluateNormal body
+            body' <- local (M.insert param Nothing) (evaluateNormal body)
             pure $ Abs sp (Ident paramSp param) body'
 
         App sp f x -> do

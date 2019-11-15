@@ -27,8 +27,13 @@ program = ws *> many (definition <* ws) <* eof
 
 definition :: Parser Defn
 definition = do
-    ((ident, body), sp) <- withSpan $ (,) <$> identifier <*> (ws *> char '=' *> ws *> expression <* ws <* char ';')
-    pure $ Defn sp ident body
+    p1 <- getOffset
+    ident <- identifier <* ws
+    char_ '=' <* ws
+    body <- expression <* ws 
+    char_ ';'
+    p2 <- getOffset
+    pure $ Defn (Known p1 p2) ident body
 
 expression :: Parser Expr
 expression = lambda <|> application
@@ -36,7 +41,10 @@ expression = lambda <|> application
 lambda :: Parser Expr
 lambda = do
     p1 <- getOffset
-    args <- char '\\' *> some (ws *> identifier) <* ws <* char '.' <* ws
+    char_ '\\'
+    args <- some (ws *> identifier)
+    ws
+    char_ '.' <* ws
     body <- expression
     p2 <- getOffset
     let sp = Known p1 p2
@@ -47,7 +55,7 @@ lambda = do
 application :: Parser Expr
 application = do
     f1 <- atom
-    fs <- many (ws *> atom)
+    fs <- many $ ws *> atom
     pure $ foldl1 assoc (f1:fs)
     where
         assoc f x = App (getSpan f <> getSpan x) f x

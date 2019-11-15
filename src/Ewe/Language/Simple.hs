@@ -3,8 +3,6 @@ module Ewe.Language.Simple
     ) where
 
 import           Control.Monad
-import           Control.Monad.Except
-import           Control.Monad.Reader
 import qualified Data.Map as M
 import           Ewe.Language.Class
 import           Ewe.Language.Common.Error
@@ -33,13 +31,13 @@ instance Language Simple where
             Just x  -> pure x
 
     evalDefn _ env (S.Defn _ (S.Ident _ name) body) = do
-        bodyTyp <- runExcept $ runReaderT (S.typecheck body) (M.map fst env)
-        val <- runExcept $ runReaderT (S.evaluate body) (M.map snd env)
+        bodyTyp <- runUsual (M.map fst env) (S.typecheck body)
+        val <- runUsual (M.map snd env) (S.evaluate body)
         pure (val, M.insert name (bodyTyp, val) env)
 
-    evalExpr _ env expr = runExcept . flip runReaderT (M.map snd env) $ S.evaluate expr
+    evalExpr _ env expr = runUsual (M.map snd env) $ S.evaluate expr
 
-    typeof _ env expr = S.prettyType <$> runExcept (runReaderT (S.typecheck expr) (M.map fst env))
+    typeof _ env expr = S.prettyType <$> runUsual (M.map fst env) (S.typecheck expr)
 
     prelude _ = S.prelude
     envKeys _ = M.keys

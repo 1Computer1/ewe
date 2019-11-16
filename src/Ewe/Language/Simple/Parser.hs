@@ -129,7 +129,7 @@ identifier = try $ do
 typeAnnotation :: Parser TypAnn
 typeAnnotation = do
     t1 <- typeAtom
-    ts <- many . try $ ws *> string_ "->" *> ws *> typeAtom
+    ts <- many . try $ ws *> string "->" *> ws *> typeAtom
     pure $ foldr1 assoc (t1:ts)
     where
         assoc t acc = TypAnnArr (getSpan t <> getSpan acc) t acc
